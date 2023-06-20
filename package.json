@@ -1,0 +1,30 @@
+{
+  "name": "twitter-image-poster",
+  "version": "1.0.0",
+  "description": "Post images to Twitter",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node image-tweeter.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/BadToxic/twitter-image-poster.git"
+  },
+  "keywords": [
+    "twitter",
+    "bot",
+    "post",
+    "social",
+    "media"
+  ],
+  "author": "BadToxic",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/BadToxic/twitter-image-poster/issues"
+  },
+  "homepage": "https://github.com/BadToxic/twitter-image-poster#readme",
+  "dependencies": {
+    "twit": "^2.2.11"
+  }
+}
