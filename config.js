@@ -1,8 +1,12 @@
 const config = {
-	consumer_key:         'XXXXX',
-	consumer_secret:      'XXXXX',
-	access_token:         'XXXXX',
-	access_token_secret:  'XXXXX'
+	appKey:       'XXXX',
+	appSecret:    'XXXX',
+	accessToken:  'XXXX',
+	accessSecret: 'XXXX',
+	bearerToken:  'XXXX',
+	clientID:     'XXXX',
+	clientSecret: 'XXXX',
+	repeatSeconds: 12
 }
 
 module.exports = config;
