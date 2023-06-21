@@ -25,6 +25,7 @@
   },
   "homepage": "https://github.com/BadToxic/twitter-image-poster#readme",
   "dependencies": {
+    "png-metadata": "^1.0.2",
     "twitter-api-sdk": "^1.2.0",
     "twitter-api-v2": "^1.12.8"
   }

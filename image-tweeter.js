@@ -5,7 +5,8 @@
 
 const fs = require('fs'),
       path = require('path'),
-      TwitterV2BT = require(path.join(__dirname, 'twitter-v2-bt.js'));
+      TwitterV2BT = require(path.join(__dirname, 'twitter-v2-bt.js')),
+	  png = require('png-metadata'),
       config = require(path.join(__dirname, 'config.js'));
 
 const T = new TwitterV2BT(config);
@@ -27,7 +28,7 @@ const tweetText = async (text) => {
 	const me = await T.tweet(text);
 	console.log(me);
 }
-
+		
 const tweetRandomImage = async () => {
     /* First, read the content of the images folder. */
 
@@ -49,7 +50,14 @@ const tweetRandomImage = async () => {
             /* Upload the image to Twitter. */
 			const imageName = randomFromArray(images);
 			const imagePath = path.join(__dirname, '/images/' + imageName);
-			try {
+			
+			// load from file
+			var s = png.readFileSync(imagePath);
+			// split
+			var list = png.splitChunk(s);
+			console.log(list[1]);
+			
+			/*try {
 				console.log('uploading an image...', imagePath);
 				const tweetImage = await T.tweetMedia('Check out my new image! 👀', imagePath)
 				console.log(tweetImage);
@@ -59,7 +67,7 @@ const tweetRandomImage = async () => {
 				});
 			} catch (error) {
 				console.log(error);
-			}
+			}*/
         }
     });
 }
@@ -67,8 +75,8 @@ const tweetRandomImage = async () => {
 // Direct calls
 // whoami();
 // tweetText('Test Tweet');
-// tweetRandomImage();
+tweetRandomImage();
 
-setInterval(() => {
+/*setInterval(() => {
     tweetRandomImage();
-}, config.repeatSeconds * 1000);
+}, config.repeatSeconds * 1000);*/
