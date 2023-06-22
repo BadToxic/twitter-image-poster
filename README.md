@@ -5,11 +5,14 @@ Created for posting pictures created with [Auto1111](https://github.com/AUTOMATI
 It will automatically use tags (__/\B(\#[a-zA-Z0-9]+\b)/g__) from the positive prompt that is stored in the png meta data of the generated images as text in the Twitter post.
 
 ## Instructions
-1. Set your Twitter API in the config.js (find them on https://developer.twitter.com/en/portal/dashboard).
-2. Put your images in the __images__ folder.
-3. npm start
+1. Checkout or download this project.
+2. Install [NodeJS](https://nodejs.org/en/download) if not done before.
+3. Type __npm install__ in __cmd__ in the root folder of this project to install all needed packages.
+4. Set your Twitter API in the config.js (find them on https://developer.twitter.com/en/portal/dashboard, login and create an app __with writing rights__).
+5. Put your images in the __images__ folder.
+6. npm start
 
-Posted images will be moved to the foler __images-sent__.
+Posted images will be moved to the foler __images-sent__ if exists (must be created if wanted).
 
 ## Single post or repeating
 
