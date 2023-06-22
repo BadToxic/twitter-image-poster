@@ -6,8 +6,24 @@ It will automatically use tags (__/\B(\#[a-zA-Z0-9]+\b)/g__) from the positive p
 
 ## Instructions
 1. Set your Twitter API in the config.js (find them on https://developer.twitter.com/en/portal/dashboard).
-2. Put your images in the images folder.
+2. Put your images in the __images__ folder.
 3. npm start
+
+Posted images will be moved to the foler __images-sent__.
+
+## Single post or repeating
+
+Switch (comment in/out) between the following code blocks in __image-tweeter.js__ at the end of the file:
+
+	tweetRandomImage();
+	
+For posting only one image directly, or
+
+	setInterval(() => {
+		tweetRandomImage();
+	}, config.repeatSeconds * 1000);
+	
+To post repeatedly every __repeatSeconds__ seconds (can be changed in the __config.js__ file).
 
 ## Example
 
