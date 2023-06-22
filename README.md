@@ -42,7 +42,9 @@ Result of an image that contains the following Meta data:
 # Find me
 
 - [BadToxic Discord Server](https://discord.gg/8QMCm2d)
-- [Instagram](http://instagram.com/xybadtoxic)
+- [Instagram Main](http://instagram.com/xybadtoxic)
+- [Instagram AI](http://instagram.com/badtoxicai)
+- [Instagram Developer](http://instagram.com/badtoxicdev)
 - [Twitter Main](https://twitter.com/BadToxic)
 - [Twitter AI](https://twitter.com/BadToxicAI)
 - [TikTok](https://www.tiktok.com/@badtoxic)
