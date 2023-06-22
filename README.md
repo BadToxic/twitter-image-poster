@@ -1,8 +1,8 @@
 # twitter-image-poster
-Post (random) images on Twitter
+Post (random) images on Twitter.
 
-Created for postin pictures created with Auto1111 Stable Diffusion AI.
-It will automatically use tags (__/\B(\#[a-zA-Z0-9]+\b)/g__) from the positive prompt that is stored in the png meta data of the generated images as text in the twitter post.
+Created for posting pictures created with [Auto1111](https://github.com/AUTOMATIC1111) Stable Diffusion AI.<br>
+It will automatically use tags (__/\B(\#[a-zA-Z0-9]+\b)/g__) from the positive prompt that is stored in the png meta data of the generated images as text in the Twitter post.
 
 ## Instructions
 1. Set your Twitter API in the config.js (find them on https://developer.twitter.com/en/portal/dashboard).
@@ -19,3 +19,12 @@ Result of an image that contains the following Meta data:
 
 
 ![Example Post](example-post.png)
+
+# Find me
+
+- [BadToxic Discord Server](https://discord.gg/8QMCm2d)
+- [Instagram](http://instagram.com/xybadtoxic)
+- [Twitter Main](https://twitter.com/BadToxic)
+- [Twitter AI](https://twitter.com/BadToxicAI)
+- [TikTok](https://www.tiktok.com/@badtoxic)
+- [Twitch](https://www.twitch.tv/xybadtoxic)
