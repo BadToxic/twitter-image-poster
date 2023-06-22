@@ -28,10 +28,49 @@ const tweetText = async (text) => {
 	const me = await T.tweet(text);
 	console.log(me);
 }
+
+// If the image is a png generated with auto111 it should have some usefull info in the png meta data
+const getTags = (imagePath) => {
+	try {
+		const file = png.readFileSync(imagePath);
+		const list = png.splitChunk(file);
+		if (list.length < 2) {
+			return '';
+		}
+		let auto111Data = list[1].data;
+		if (!auto111Data.startsWith('parameters\x00')) {
+			return '';
+		}
+		
+		const sampler = auto111Data.substring(auto111Data.indexOf(", Sampler: ") + 11, auto111Data.indexOf(", CFG scale: "));
+		// Find the model the image was generated with
+		const model = auto111Data.substring(auto111Data.indexOf(", Model: ") + 9, auto111Data.indexOf(", Version: "));
+		// Get the whole positive prompt
+		auto111Data = auto111Data.substring(11, auto111Data.indexOf("Negative prompt:"));
+		// Get all tags from the positive prompt
+		const tagList = auto111Data.match(/\B(\#[a-zA-Z0-9]+\b)/g);
+		
+		// Start with some default tags we always want to add (they will be at the end of the text)
+		let tags = '#Auto1111 #StableDiffusion #' + model.replace('_', ' ') + ' #safetensors ' + sampler;
+		
+		// Then go through all tags we found in the prompt and add them in the front while we have space
+		for (let tagIndex = tagList.length - 1; tagIndex >= 0; tagIndex--) {
+			const tag = tagList[tagIndex];
+			// There are only 280 chars allowed in a Twitter post
+			if (tagList.length + tag.length >= 280) {
+				break;
+			}
+			tags = tag + ' ' + tags;
+		}
+		return tags;
+	} catch(error) {
+		console.log(error);
+	}
+	return '';
+}
 		
 const tweetRandomImage = async () => {
-    /* First, read the content of the images folder. */
-
+    // First, read the content of the images folder
     fs.readdir(__dirname + '/images', async (err, files) => {
         if (err){
             console.log('error:', err);
@@ -43,23 +82,18 @@ const tweetRandomImage = async () => {
                 images.push(f);
             });
 
-            /* Then pick a random image. */
-
+            // Then pick a random image and upload it to Twitter
             console.log('opening an image...');
-
-            /* Upload the image to Twitter. */
 			const imageName = randomFromArray(images);
 			const imagePath = path.join(__dirname, '/images/' + imageName);
 			
-			// load from file
-			var s = png.readFileSync(imagePath);
-			// split
-			var list = png.splitChunk(s);
-			console.log(list[1]);
+			// Load from file
+			const tags = getTags(imagePath);
+			console.log('Tags found: ' + tags);
 			
-			/*try {
+			try {
 				console.log('uploading an image...', imagePath);
-				const tweetImage = await T.tweetMedia('Check out my new image! 👀', imagePath)
+				const tweetImage = await T.tweetMedia(tags, imagePath)
 				console.log(tweetImage);
 				const newImagePath = path.join(__dirname, '/images-sent/' + imageName);
 				fs.rename(imagePath, newImagePath, () => {
@@ -67,7 +101,7 @@ const tweetRandomImage = async () => {
 				});
 			} catch (error) {
 				console.log(error);
-			}*/
+			}
         }
     });
 }
