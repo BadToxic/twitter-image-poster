@@ -8,9 +8,10 @@ It will automatically use tags (__/\B(\#[a-zA-Z0-9]+\b)/g__) from the positive p
 1. Checkout or download this project.
 2. Install [NodeJS](https://nodejs.org/en/download) if not done before.
 3. Type __npm install__ in __cmd__ in the root folder of this project to install all needed packages.
-4. Set your Twitter API in the config.js (find them on https://developer.twitter.com/en/portal/dashboard, login and create an app __with writing rights__).
-5. Put your images in the __images__ folder.
-6. npm start
+4. Set your Twitter API in the __config.js__ (find them on https://developer.twitter.com/en/portal/dashboard, login and create an app __with writing rights__).
+5. (Optional) You can add tags to the __defaultTags__ string in the __config.js__ file that will always be used.
+6. Put your images in the __images__ folder.
+7. npm start
 
 Posted images will be moved to the foler __images-sent__ if exists (must be created if wanted).
 

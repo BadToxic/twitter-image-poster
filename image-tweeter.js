@@ -43,21 +43,25 @@ const getTags = (imagePath) => {
 		}
 		
 		const sampler = auto111Data.substring(auto111Data.indexOf(", Sampler: ") + 11, auto111Data.indexOf(", CFG scale: "));
-		// Find the model the image was generated with
-		const model = auto111Data.substring(auto111Data.indexOf(", Model: ") + 9, auto111Data.indexOf(", Version: "));
+		// Find the model the image was generated with (after the model "Lora" or "Version" may come)
+		let endOfModel = auto111Data.indexOf(", Lora");
+		if (endOfModel < 0) {
+			endOfModel = auto111Data.indexOf(", Version");
+		}
+		const model = auto111Data.substring(auto111Data.indexOf(", Model: ") + 9, endOfModel);
 		// Get the whole positive prompt
 		auto111Data = auto111Data.substring(11, auto111Data.indexOf("Negative prompt:"));
 		// Get all tags from the positive prompt
 		const tagList = auto111Data.match(/\B(\#[a-zA-Z0-9]+\b)/g);
 		
 		// Start with some default tags we always want to add (they will be at the end of the text)
-		let tags = '#Auto1111 #StableDiffusion #' + model.replace('_', ' ') + ' #safetensors ' + sampler;
+		let tags = ' ' + config.defaultTags + ' #' + model.replace('_', ' ') + ' ' + sampler;
 		
 		// Then go through all tags we found in the prompt and add them in the front while we have space
 		for (let tagIndex = tagList.length - 1; tagIndex >= 0; tagIndex--) {
 			const tag = tagList[tagIndex];
 			// There are only 280 chars allowed in a Twitter post
-			if (tagList.length + tag.length >= 280) {
+			if (tags.length + tag.length >= 280) {
 				break;
 			}
 			tags = tag + ' ' + tags;
