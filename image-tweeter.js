@@ -52,7 +52,10 @@ const getTags = (imagePath) => {
 		// Get the whole positive prompt
 		auto111Data = auto111Data.substring(11, auto111Data.indexOf("Negative prompt:"));
 		// Get all tags from the positive prompt
-		const tagList = auto111Data.match(/\B(\#[a-zA-Z0-9]+\b)/g);
+		let tagList = auto111Data.match(/\B(\#[a-zA-Z0-9]+\b)/g);
+		if (tagList == null) {
+			tagList = [];
+		}
 		
 		// Start with some default tags we always want to add (they will be at the end of the text)
 		let tags = ' ' + config.defaultTags + ' #' + model.replace('_', ' ') + ' ' + sampler;
