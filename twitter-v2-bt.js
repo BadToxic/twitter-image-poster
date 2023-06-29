@@ -2,7 +2,7 @@ const { TwitterApi } = require('twitter-api-v2')
 const { Client } = require("twitter-api-sdk");
 
 class TwitterV2BT {
-  //Constructor stores this.id with current logged in user id to propagate values required by the user.
+	
   constructor(config){
       this.client = new TwitterApi({
           appKey: config.appKey,
@@ -12,15 +12,16 @@ class TwitterV2BT {
       });
   }
 
-  // Get current logged in user
+  // Get current logged in user. Stores loggedUserId with current logged in user id to propagate values required by the user.
   async whoami(){
       return await this.client.v2.me()
       .then((response)=>{
-          this.id = response.data.id;
-          return response.data;
+		this.loggedUserId = response.data.id;
+		console.log('Logged in user ID:', this.loggedUserId);
+		return response.data;
       })
       .catch((error)=>{
-          return error.message;
+		return error.message;
       });
   };
 
@@ -56,6 +57,27 @@ class TwitterV2BT {
 			console.log(error);
             return error.data;
         });
+  }
+
+  // Like a Tweet using Twitter API v2
+  async likeTweet(targetTweetId){
+    if(!targetTweetId) return 'Enter ID of tweet to like';
+	if (!this.loggedUserId) {
+		await this.whoami();
+	}
+	if (!this.loggedUserId) {
+		console.log('Can not like own post, because own user id is missing!');
+		return;
+	}
+	return await this.client.v2.like(this.loggedUserId, targetTweetId)
+    .then((response)=>{
+		console.log('Liked tweet with response:', response);
+        return response
+    })
+    .catch((error)=>{
+		console.log(error);
+        return error.message;
+    });
   }
 
 }
