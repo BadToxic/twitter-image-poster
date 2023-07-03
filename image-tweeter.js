@@ -11,6 +11,9 @@ const fs = require('fs'),
 
 const T = new TwitterV2BT(config);
 
+// A map that maps a hash generated from tags in a picture to the tweetID of the post of that picture
+let quoteData = {};
+
 const randomFromArray = (arr) => {
     /* Helper function for picking a random item from an array. */
 
@@ -28,6 +31,30 @@ const tweetText = async (text) => {
 	const me = await T.tweet(text);
 	console.log(me);
 }
+
+// String to 53bit hash (https://stackoverflow.com/a/52171480/12805111)
+const cyrb53 = (str, seed = 0) => {
+    let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+    for(let i = 0, ch; i < str.length; i++) {
+        ch = str.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+    }
+    h1  = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+    h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2  = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+    h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  
+    return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+};
+
+const saveQuoteData = () => {
+    fs.writeFileSync(__dirname + '/quoteData.json', JSON.stringify(quoteData, null, 2) , 'utf-8');
+};
+
+const loadQuoteData = () => {
+    quoteData = JSON.parse(fs.readFileSync(__dirname + '/quoteData.json', { encoding: 'utf-8', flag: 'r' }));
+};
 
 // If the image is a png generated with auto111 it should have some usefull info in the png meta data
 const getTags = (imagePath) => {
@@ -69,7 +96,11 @@ const getTags = (imagePath) => {
 			}
 			tags = tag + ' ' + tags;
 		}
-		return tags;
+		
+		// Generate a 53bit hash to be able to find posts to quote
+		const tagsHash = cyrb53((config.hashWithTags ? tagList.join('') : '') + (config.hashWithModel ? model : '') + (config.hashWithSampler ? sampler : ''));
+		
+		return { tags, tagsHash };
 	} catch(error) {
 		console.log(error);
 	}
@@ -95,17 +126,38 @@ const tweetRandomImage = async () => {
 			const imagePath = path.join(__dirname, '/images/' + imageName);
 			
 			// Load from file
-			const tags = getTags(imagePath);
-			console.log('Tags found: ' + tags);
+			const { tags, tagsHash } = getTags(imagePath);
+			console.log('Tags found: ' + tags + ' with hash: ' + tagsHash);
+			
+			// Check for old tweets to quote
+			let quotedTweetId = null; // eg. '1675632144117379073';
+			
+			if (config.quote) {
+				try {
+					loadQuoteData();
+					const loadedTweetID = quoteData[tagsHash];
+					if (loadedTweetID) {
+						quotedTweetId = loadedTweetID;
+						console.log('Found a previous tweet to quote with ID ', quotedTweetId);
+					}
+				} catch (error) {
+					// It's OK if there was no file
+				}
+			}
 			
 			try {
 				console.log('uploading an image...', imagePath);
-				const tweetImage = await T.tweetMedia(tags, imagePath)
+				const tweetImage = await T.tweetMedia(tags, imagePath, quotedTweetId)
 				console.log('Tweet with picture tweeted with response:', tweetImage);
 				const newImagePath = path.join(__dirname, '/images-sent/' + imageName);
 				fs.rename(imagePath, newImagePath, () => {
 					console.log('Moved ' + imageName + ' to ' + newImagePath);
 				});
+				
+				// Store tweet ID to find it later for quoting
+				quoteData[tagsHash] = tweetImage.data.id;
+				saveQuoteData();
+				
 				// Like own Tweet - not allowed with the free Tier of the Twitter API
 				// await T.likeTweet(tweetImage.data.id);
 			} catch (error) {

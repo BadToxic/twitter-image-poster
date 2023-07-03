@@ -39,19 +39,30 @@ class TwitterV2BT {
   }
 
   // Make a media tweet using Twitter API v1 & v2
-  async tweetMedia(message, mediaPath){
+  async tweetMedia(message, mediaPath, quotedTweetId = null){
     if(!message) return 'Enter a message.';
     if(!mediaPath) return 'Enter image or video path.';
     return await this.client.v1.uploadMedia(mediaPath)
         .then(async (mediaId)=>{
-			console.log('picture uploaded with mediaId:', mediaId);
-            return await this.client.v2.tweet({ text: message, media: { media_ids: [mediaId] } })
-                .then((response)=>{
-                    return response;
-                })
-                .catch((error)=>{
-                    return error;
-                });
+			if (quotedTweetId) {
+				console.log('Picture uploaded with mediaId: ' + mediaId + '. Trying to post it as a quote for ' + quotedTweetId);
+				return await this.client.v2.tweet({ text: message, media: { media_ids: [mediaId] }, quote_tweet_id: quotedTweetId })
+					.then((response)=>{
+						return response;
+					})
+					.catch((error)=>{
+						return error;
+					});
+			} else {
+				console.log('Picture uploaded with mediaId:', mediaId, 'Trying to post it.');
+				return await this.client.v2.tweet({ text: message, media: { media_ids: [mediaId] } })
+					.then((response)=>{
+						return response;
+					})
+					.catch((error)=>{
+						return error;
+					});
+			}
         })
         .catch((error)=>{
 			console.log(error);

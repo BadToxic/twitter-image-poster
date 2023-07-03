@@ -29,6 +29,14 @@ For posting only one image directly, or
 	
 To post repeatedly every __repeatSeconds__ seconds (can be changed in the __config.js__ file).
 
+## Quote previous tweets
+
+Set __quote__ in the __config.js__ file to __true__ to quote previous tweets in your new tweets.<br>
+You can use these three flags in the __config.js__ file to determine when it should quote or not:<br>
+- __hashWithTags__ Uses the tags in the png meta data (not the __defaultTags__ from the __config.js__).
+- __hashWithModel__ Uses the model (checkpoint) used for the image generation, read from the png meta data.
+- __hashWithSampler__ Uses the sampler used for the image generation, read from the png meta data.
+
 ## Example
 
 Result of an image that contains the following Meta data:
