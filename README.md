@@ -38,7 +38,7 @@ You can use these three flags in the __config.js__ file to determine when it sho
 - __hashWithSampler__ Uses the sampler used for the image generation, read from the png meta data.
 That means if all three are set to __false__ it will always quote, no matter the used tags, model or sampler.
 
-## Example
+## Examples
 
 Result of an image that contains the following Meta data:
 
@@ -48,6 +48,10 @@ Result of an image that contains the following Meta data:
 
 
 ![Example Post](example-post.png)
+
+Result of a tweet with quoting a previous tweet that used the same tags, model and sampler:
+
+![Example Post with Quote](example-post-with-quote.png)
 
 # Find me
 
