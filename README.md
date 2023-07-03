@@ -36,6 +36,7 @@ You can use these three flags in the __config.js__ file to determine when it sho
 - __hashWithTags__ Uses the tags in the png meta data (not the __defaultTags__ from the __config.js__).
 - __hashWithModel__ Uses the model (checkpoint) used for the image generation, read from the png meta data.
 - __hashWithSampler__ Uses the sampler used for the image generation, read from the png meta data.
+
 That means if all three are set to __false__ it will always quote, no matter the used tags, model or sampler.
 
 ## Examples
