@@ -7,7 +7,8 @@ const fs = require('fs'),
       path = require('path'),
       TwitterV2BT = require(path.join(__dirname, 'twitter-v2-bt.js')),
 	  png = require('png-metadata'),
-      config = require(path.join(__dirname, 'config.js'));
+      config = require(path.join(__dirname, 'config.js')),
+	  cliProgress = require('cli-progress');
 
 const T = new TwitterV2BT(config);
 
@@ -108,70 +109,125 @@ const getTags = (imagePath) => {
 }
 		
 const tweetRandomImage = async () => {
-    // First, read the content of the images folder
-    fs.readdir(__dirname + '/images', async (err, files) => {
-        if (err){
-            console.log('error:', err);
-            return;
-        } else {
-            let images = [];
+	const promise = new Promise((resolve, reject) => {
+		// First, read the content of the images folder
+		fs.readdir(__dirname + '/images', async (err, files) => {
+			if (err){
+				console.log('error:', err);
+				return;
+			} else {
+				let images = [];
 
-            files.forEach((f) => {
-                images.push(f);
-            });
-
-            // Then pick a random image and upload it to Twitter
-            console.log('opening an image...');
-			const imageName = randomFromArray(images);
-			const imagePath = path.join(__dirname, '/images/' + imageName);
-			
-			// Load from file
-			const { tags, tagsHash } = getTags(imagePath);
-			console.log('Tags found: ' + tags + ' with hash: ' + tagsHash);
-			
-			// Check for old tweets to quote
-			let quotedTweetId = null; // eg. '1675632144117379073';
-			
-			if (config.quote) {
-				try {
-					loadQuoteData();
-					const loadedTweetID = quoteData[tagsHash];
-					if (loadedTweetID) {
-						quotedTweetId = loadedTweetID;
-						console.log('Found a previous tweet to quote with ID ', quotedTweetId);
-					}
-				} catch (error) {
-					// It's OK if there was no file
-				}
-			}
-			
-			try {
-				console.log('uploading an image...', imagePath);
-				const tweetImage = await T.tweetMedia(tags, imagePath, quotedTweetId)
-				console.log('Tweet with picture tweeted with response:', tweetImage);
-				const newImagePath = path.join(__dirname, '/images-sent/' + imageName);
-				fs.rename(imagePath, newImagePath, () => {
-					console.log('Moved ' + imageName + ' to ' + newImagePath);
+				files.forEach((f) => {
+					images.push(f);
 				});
+
+				// Then pick a random image and upload it to Twitter
+				const imageName = randomFromArray(images);
+				console.log('Opening image', imageName);
+				const imagePath = path.join(__dirname, '/images/' + imageName);
 				
-				// Store tweet ID to find it later for quoting
-				quoteData[tagsHash] = tweetImage.data.id;
-				saveQuoteData();
+				// Load from file
+				const { tags, tagsHash } = getTags(imagePath);
+				console.log('Tags found: ' + tags + ' with hash: ' + tagsHash);
 				
-				// Like own Tweet - not allowed with the free Tier of the Twitter API
-				// await T.likeTweet(tweetImage.data.id);
-			} catch (error) {
-				console.log(error);
+				// Check for old tweets to quote
+				let quotedTweetId = null; // eg. '1675632144117379073';
+				
+				if (config.quote) {
+					try {
+						loadQuoteData();
+						const loadedTweetID = quoteData[tagsHash];
+						if (loadedTweetID) {
+							quotedTweetId = loadedTweetID;
+							console.log('Found a previous tweet to quote with ID ', quotedTweetId);
+						}
+					} catch (error) {
+						// It's OK if there was no file
+					}
+				}
+				
+				try {
+					console.log('uploading an image...', imagePath);
+					const tweetImage = await T.tweetMedia(tags, imagePath, quotedTweetId)
+					console.log('Tweet with picture tweeted with response:', tweetImage);
+					const newImagePath = path.join(__dirname, '/images-sent/' + imageName);
+					fs.rename(imagePath, newImagePath, () => {
+						console.log('Moved ' + imageName + ' to ' + newImagePath);
+					});
+					
+					// Store tweet ID to find it later for quoting
+					quoteData[tagsHash] = tweetImage.data.id;
+					saveQuoteData();
+					
+					// Like own Tweet - not allowed with the free Tier of the Twitter API
+					// await T.likeTweet(tweetImage.data.id);
+				} catch (error) {
+					console.log(error);
+					reject(error);
+				}
+				
+				console.log(new Date().toLocaleString());
+				
+				resolve();
 			}
-        }
-    });
+		});
+	});
+	
+	return promise;
 }
 
 // Direct calls
 // whoami();
 // tweetText('Test Tweet');
-tweetRandomImage();
 
-/*setInterval(() => {
-    tweetRandomImage();
-}, config.repeatSeconds * 1000);*/
+if (config.repeat) {
+	const waitBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+	let repeatAfter, repeatCounter;
+	
+	const resetCounter = () => {
+		repeatAfter = config.repeatSeconds + Math.floor(Math.random() * config.repeatVariation);
+		repeatCounter = repeatAfter; // Will be decreased every second until it reaches 0
+	};
+	
+	const startCounter = () => {
+		resetCounter();
+		waitBar.start(repeatAfter, 0);
+	};
+
+	
+	const repeater = async () => {
+		
+		// Update the current waiting progress
+		waitBar.update(repeatAfter - repeatCounter);
+		
+		if (repeatCounter <= 0) {
+			
+			waitBar.stop();
+			console.log(''); // New Line
+			
+			await tweetRandomImage();
+			
+			console.log(''); // New Line
+			// Restart the progress bar and counter
+			startCounter();
+			
+		}
+		
+		repeatCounter -= 1;
+		setTimeout(repeater, 1000);
+	};
+	
+	// First post directly without waiting
+	tweetRandomImage().then(() => {
+		console.log(''); // New Line
+		// And after that start the counter progress bar and loop
+		startCounter();
+		repeater();
+	});
+	
+
+} else {
+	// Only one single call
+	tweetRandomImage();
+}

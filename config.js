@@ -6,12 +6,14 @@ const config = {
 	bearerToken:     'XXXX',
 	clientID:        'XXXX',
 	clientSecret:    'XXXX',
-	repeatSeconds:   12,
+	repeat:          true,
+	repeatSeconds:   600,
+	repeatVariation: 120,
 	defaultTags:     '#Auto1111 #StableDiffusion #safetensors #AIArt #AI #art',
 	quote:           true,
 	hashWithTags:    true,
-	hashWithModel:   true,
-	hashWithSampler: true
+	hashWithModel:   false,
+	hashWithSampler: false
 }
 
 module.exports = config;

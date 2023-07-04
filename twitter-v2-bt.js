@@ -1,5 +1,5 @@
 const { TwitterApi } = require('twitter-api-v2')
-const { Client } = require("twitter-api-sdk");
+const { Client } = require('twitter-api-sdk');
 
 class TwitterV2BT {
 	

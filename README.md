@@ -17,17 +17,8 @@ Posted images will be moved to the foler __images-sent__ if exists (must be crea
 
 ## Single post or repeating
 
-Switch (comment in/out) between the following code blocks in __image-tweeter.js__ at the end of the file:
-
-	tweetRandomImage();
-	
-For posting only one image directly, or
-
-	setInterval(() => {
-		tweetRandomImage();
-	}, config.repeatSeconds * 1000);
-	
-To post repeatedly every __repeatSeconds__ seconds (can be changed in the __config.js__ file).
+Set __repeat__ in the __config.js__ file to __false__ if you only want to do a single post.<br>
+Is __repeat__ set to __true__ it will post repeatedly every __repeatSeconds__ seconds with a variance of __repeatVariation__ seconds. All values can be changed in the __config.js__ file.
 
 ## Quote previous tweets
 
