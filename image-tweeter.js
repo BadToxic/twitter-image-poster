@@ -149,16 +149,19 @@ const tweetRandomImage = async () => {
 				
 				try {
 					console.log('uploading an image...', imagePath);
-					const tweetImage = await T.tweetMedia(tags, imagePath, quotedTweetId)
+					const tweetImage = await T.tweetMedia(tags, imagePath, quotedTweetId);
 					console.log('Tweet with picture tweeted with response:', tweetImage);
-					const newImagePath = path.join(__dirname, '/images-sent/' + imageName);
-					fs.rename(imagePath, newImagePath, () => {
-						console.log('Moved ' + imageName + ' to ' + newImagePath);
-					});
 					
 					// Store tweet ID to find it later for quoting
 					quoteData[tagsHash] = tweetImage.data.id;
 					saveQuoteData();
+					
+					const newImagePath = path.join(__dirname, '/images-sent/' + imageName);
+					fs.rename(imagePath, newImagePath, () => {
+						console.log('Moved ' + imageName + ' to ' + newImagePath);
+						console.log(new Date().toLocaleString());
+						resolve();
+					});
 					
 					// Like own Tweet - not allowed with the free Tier of the Twitter API
 					// await T.likeTweet(tweetImage.data.id);
@@ -166,10 +169,6 @@ const tweetRandomImage = async () => {
 					console.log(error);
 					reject(error);
 				}
-				
-				console.log(new Date().toLocaleString());
-				
-				resolve();
 			}
 		});
 	});
