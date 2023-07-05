@@ -109,12 +109,12 @@ const getTags = (imagePath) => {
 }
 		
 const tweetRandomImage = async () => {
-	const promise = new Promise((resolve, reject) => {
+	return new Promise((resolve, reject) => {
 		// First, read the content of the images folder
 		fs.readdir(__dirname + '/images', async (err, files) => {
 			if (err){
 				console.log('error:', err);
-				return;
+				reject(err);
 			} else {
 				let images = [];
 
@@ -150,7 +150,13 @@ const tweetRandomImage = async () => {
 				try {
 					console.log('uploading an image...', imagePath);
 					const tweetImage = await T.tweetMedia(tags, imagePath, quotedTweetId);
-					console.log('Tweet with picture tweeted with response:', tweetImage);
+					// console.log(typeof tweetImage === 'string', tweetImage instanceof String, typeof tweetImage);
+					if (tweetImage.error) {
+						console.log('Can not tweet: Received error', tweetImage.code, '-', tweetImage.data?.title, '\n');
+						// reject(tweetImage);
+						throw new Error(tweetImage);
+					}
+					console.log('Tweet with picture - response:', tweetImage);
 					
 					// Store tweet ID to find it later for quoting
 					quoteData[tagsHash] = tweetImage.data.id;
@@ -172,8 +178,6 @@ const tweetRandomImage = async () => {
 			}
 		});
 	});
-	
-	return promise;
 }
 
 // Direct calls
@@ -205,7 +209,12 @@ if (config.repeat) {
 			waitBar.stop();
 			console.log(''); // New Line
 			
-			await tweetRandomImage();
+			try {
+				await tweetRandomImage();
+			} catch (error) {
+				console.log('\nStopping program at', new Date().toLocaleString());
+				return;
+			}
 			
 			console.log(''); // New Line
 			// Restart the progress bar and counter
@@ -223,8 +232,9 @@ if (config.repeat) {
 		// And after that start the counter progress bar and loop
 		startCounter();
 		repeater();
+	}, () => {
+		console.log('\nStopping program at', new Date().toLocaleString());
 	});
-	
 
 } else {
 	// Only one single call
