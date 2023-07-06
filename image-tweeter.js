@@ -4,6 +4,7 @@
 */
 
 const fs = require('fs'),
+	  // upath = require('upath'),
       path = require('path'),
       TwitterV2BT = require(path.join(__dirname, 'twitter-v2-bt.js')),
 	  png = require('png-metadata'),
@@ -16,8 +17,7 @@ const T = new TwitterV2BT(config);
 let quoteData = {};
 
 const randomFromArray = (arr) => {
-    /* Helper function for picking a random item from an array. */
-
+    /* Helper function for picking a random item from an array */
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
@@ -55,6 +55,22 @@ const saveQuoteData = () => {
 
 const loadQuoteData = () => {
     quoteData = JSON.parse(fs.readFileSync(__dirname + '/quoteData.json', { encoding: 'utf-8', flag: 'r' }));
+};
+
+// Get all images recursively
+const getImagesRecursive = (dir = path.join(__dirname, 'images'), filelist = []) => {
+    fs.readdirSync(dir).forEach((file) => {
+		const filePath = path.join(dir, file);
+        if (fs.statSync(filePath).isDirectory()) {
+            filelist = getImagesRecursive(filePath, filelist);
+        } else {
+            const ext = path.extname(file).toLowerCase();
+            if (ext == '.jpg' || ext == '.jpeg' || ext == '.png') {
+                filelist.push(filePath);
+            }
+        }
+    });
+    return filelist;
 };
 
 // If the image is a png generated with auto111 it should have some usefull info in the png meta data
@@ -109,74 +125,68 @@ const getTags = (imagePath) => {
 }
 		
 const tweetRandomImage = async () => {
-	return new Promise((resolve, reject) => {
-		// First, read the content of the images folder
-		fs.readdir(__dirname + '/images', async (err, files) => {
-			if (err){
-				console.log('error:', err);
-				reject(err);
-			} else {
-				let images = [];
-
-				files.forEach((f) => {
-					images.push(f);
-				});
-
-				// Then pick a random image and upload it to Twitter
-				const imageName = randomFromArray(images);
-				console.log('Opening image', imageName);
-				const imagePath = path.join(__dirname, '/images/' + imageName);
+	
+	return new Promise(async (resolve, reject) => {
+		// Chose a random image in the images folder and its subfolders (.jpg, .jpeg, .png)
+		let imagePath;
+		try {
+			imagePath = randomFromArray(getImagesRecursive());
+			console.log('Chosen image:', imagePath);
+		} catch (err){
+			console.log('Could not find image:', err);
+			reject(err);
+		}
 				
-				// Load from file
-				const { tags, tagsHash } = getTags(imagePath);
-				console.log('Tags found: ' + tags + ' with hash: ' + tagsHash);
-				
-				// Check for old tweets to quote
-				let quotedTweetId = null; // eg. '1675632144117379073';
-				
-				if (config.quote) {
-					try {
-						loadQuoteData();
-						const loadedTweetID = quoteData[tagsHash];
-						if (loadedTweetID) {
-							quotedTweetId = loadedTweetID;
-							console.log('Found a previous tweet to quote with ID ', quotedTweetId);
-						}
-					} catch (error) {
-						// It's OK if there was no file
-					}
+		// Load from file
+		const { tags, tagsHash } = getTags(imagePath);
+		console.log('Tags found: ' + tags + '\nwith hash: ' + tagsHash);
+		
+		// Check for old tweets to quote
+		let quotedTweetId = null; // eg. '1675632144117379073';
+		
+		if (config.quote) {
+			try {
+				loadQuoteData();
+				const loadedTweetID = quoteData[tagsHash];
+				if (loadedTweetID) {
+					quotedTweetId = loadedTweetID;
+					console.log('Found a previous tweet to quote with ID ', quotedTweetId);
 				}
-				
-				try {
-					console.log('uploading an image...', imagePath);
-					const tweetImage = await T.tweetMedia(tags, imagePath, quotedTweetId);
-					// console.log(typeof tweetImage === 'string', tweetImage instanceof String, typeof tweetImage);
-					if (tweetImage.error) {
-						console.log('Can not tweet: Received error', tweetImage.code, '-', tweetImage.data?.title, '\n');
-						// reject(tweetImage);
-						throw new Error(tweetImage);
-					}
-					console.log('Tweet with picture - response:', tweetImage);
-					
-					// Store tweet ID to find it later for quoting
-					quoteData[tagsHash] = tweetImage.data.id;
-					saveQuoteData();
-					
-					const newImagePath = path.join(__dirname, '/images-sent/' + imageName);
-					fs.rename(imagePath, newImagePath, () => {
-						console.log('Moved ' + imageName + ' to ' + newImagePath);
-						console.log(new Date().toLocaleString());
-						resolve();
-					});
-					
-					// Like own Tweet - not allowed with the free Tier of the Twitter API
-					// await T.likeTweet(tweetImage.data.id);
-				} catch (error) {
-					console.log(error);
-					reject(error);
-				}
+			} catch (error) {
+				// It's OK if there was no file
 			}
-		});
+		}
+		
+		try {
+			console.log('Uploading image', imagePath);
+			const tweetImage = await T.tweetMedia(tags, imagePath, quotedTweetId);
+			// console.log(typeof tweetImage === 'string', tweetImage instanceof String, typeof tweetImage);
+			if (tweetImage.error) {
+				console.log('Can not tweet: Received error', tweetImage.code, '-', tweetImage.data?.title, '\n');
+				// reject(tweetImage);
+				throw new Error(tweetImage);
+			}
+			console.log('Tweeted with picture. Response:', tweetImage);
+			
+			// Store tweet ID to find it later for quoting
+			quoteData[tagsHash] = tweetImage.data.id;
+			saveQuoteData();
+			
+			const imageName = path.basename(imagePath);
+			const newImagePath = path.join(__dirname, path.join('images-sent', imageName));
+			fs.rename(imagePath, newImagePath, () => {
+				console.log('Moved ' + imageName + ' to ' + newImagePath);
+				console.log(new Date().toLocaleString());
+				resolve();
+			});
+			
+			// Like own Tweet - not allowed with the free Tier of the Twitter API
+			// await T.likeTweet(tweetImage.data.id);
+		} catch (error) {
+			console.log(error);
+			reject(error);
+		}
+		
 	});
 }
 
@@ -198,9 +208,7 @@ if (config.repeat) {
 		waitBar.start(repeatAfter, 0);
 	};
 
-	
 	const repeater = async () => {
-		
 		// Update the current waiting progress
 		waitBar.update(repeatAfter - repeatCounter);
 		
@@ -219,7 +227,6 @@ if (config.repeat) {
 			console.log(''); // New Line
 			// Restart the progress bar and counter
 			startCounter();
-			
 		}
 		
 		repeatCounter -= 1;
