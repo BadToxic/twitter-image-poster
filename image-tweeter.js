@@ -173,7 +173,12 @@ const tweetRandomImage = async () => {
 			saveQuoteData();
 			
 			const imageName = path.basename(imagePath);
-			const newImagePath = path.join(__dirname, path.join('images-sent', imageName));
+			const newImagePath = imagePath.replace(path.join(__dirname, 'images'), path.join(__dirname, 'images-sent'));
+			const newFolderPath = path.dirname(newImagePath);
+			// Create new subfolder(s)
+			if (!fs.existsSync(newFolderPath)) {
+				fs.mkdirSync(newFolderPath, { recursive: true });
+			}
 			fs.rename(imagePath, newImagePath, () => {
 				console.log('Moved ' + imageName + ' to ' + newImagePath);
 				console.log(new Date().toLocaleString());
