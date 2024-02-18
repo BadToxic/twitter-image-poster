@@ -12,6 +12,8 @@ const fs = require('fs'),
 	  cliProgress = require('cli-progress');
 
 const T = new TwitterV2BT(config);
+const postTextFileName = 'post.txt';
+const postHashFileName = 'hash.txt';
 
 // A map that maps a hash generated from tags in a picture to the tweetID of the post of that picture
 let quoteData = {};
@@ -50,11 +52,13 @@ const cyrb53 = (str, seed = 0) => {
 };
 
 const saveQuoteData = () => {
-    fs.writeFileSync(__dirname + '/quoteData.json', JSON.stringify(quoteData, null, 2) , 'utf-8');
+	const jsonPath = path.join(__dirname, 'quoteData.json');
+    fs.writeFileSync(jsonPath, JSON.stringify(quoteData, null, 2) , 'utf-8');
 };
 
 const loadQuoteData = () => {
-    quoteData = JSON.parse(fs.readFileSync(__dirname + '/quoteData.json', { encoding: 'utf-8', flag: 'r' }));
+	const jsonPath = path.join(__dirname, 'quoteData.json');
+    quoteData = JSON.parse(fs.readFileSync(jsonPath, { encoding: 'utf-8', flag: 'r' }));
 };
 
 // Get all images recursively
@@ -74,7 +78,7 @@ const getImagesRecursive = (dir = path.join(__dirname, 'images'), filelist = [])
 };
 
 // If the image is a png generated with auto111 it should have some usefull info in the png meta data
-const getTags = (imagePath) => {
+const getTags = (imagePath, useTxt, txtPath, hashPath) => {
 	try {
 		const file = png.readFileSync(imagePath);
 		const list = png.splitChunk(file);
@@ -102,7 +106,7 @@ const getTags = (imagePath) => {
 		}
 		
 		// Start with some default tags we always want to add (they will be at the end of the text)
-		let tags = ' ' + config.defaultTags + ' #' + model.replace('_', ' ') + ' ' + sampler;
+		let tags = config.defaultTags + ' #' + model.replace('_', ' ') + ' ' + sampler;
 		
 		// Then go through all tags we found in the prompt and add them in the front while we have space
 		for (let tagIndex = tagList.length - 1; tagIndex >= 0; tagIndex--) {
@@ -115,7 +119,14 @@ const getTags = (imagePath) => {
 		}
 		
 		// Generate a 53bit hash to be able to find posts to quote
-		const tagsHash = cyrb53((config.hashWithTags ? tagList.join('') : '') + (config.hashWithModel ? model : '') + (config.hashWithSampler ? sampler : ''));
+		const tagsHash = cyrb53((config.hashWithTags ? tagList.join('') : '') + (config.hashWithModel ? model : '') + (config.hashWithSampler ? sampler : '')) + '';
+		
+		if (useTxt) {
+			console.log('Saving post text to:', txtPath);
+			fs.writeFileSync(txtPath, tags, 'utf-8');
+			console.log('Saving hash', tagsHash, 'to:', hashPath);
+			fs.writeFileSync(hashPath, tagsHash, 'utf-8');
+		}
 		
 		return { tags, tagsHash };
 	} catch(error) {
@@ -136,10 +147,48 @@ const tweetRandomImage = async () => {
 			console.log('Could not find image:', err);
 			reject(err);
 		}
+		
+		let postTxt, postHash;
+		
+		// Check if there is already a text file to use
+		const imagesDir = path.join(__dirname, 'images');
+		const imageDirPath = path.parse(imagePath).dir;
+		// console.log('imagesDir:', imagesDir, 'imageDirPath:', imageDirPath);
+		// Only use txt files if we are in a sub folder, else we can't know which images the file is for
+		const useTxt = config.usePostHashFiles && (imagesDir != imageDirPath);
+		let tagsLoaded = false;
+		const txtPath = path.join(imageDirPath, postTextFileName);
+		const hashPath = path.join(imageDirPath, postHashFileName);
+		if (useTxt) {
+			console.log('Checking for a post text file and hash file.');
+			if (fs.existsSync(txtPath)) {
+				postTxt = fs.readFileSync(txtPath, { encoding: 'utf-8', flag: 'r' });
+				console.log('Loaded post text from file:', txtPath);
+				tagsLoaded = true;
 				
-		// Load from file
-		const { tags, tagsHash } = getTags(imagePath);
-		console.log('Tags found: ' + tags + '\nwith hash: ' + tagsHash);
+				// Also check if there is already a hash file
+				if (fs.existsSync(hashPath)) {
+					postHash = fs.readFileSync(hashPath, { encoding: 'utf-8', flag: 'r' });
+					console.log('Loaded hash from file:', hashPath);
+				} else {
+					// Else generate a 53bit hash (using the full text) to be able to find posts to quote
+					postHash = cyrb53(postTxt) + '';
+					fs.writeFileSync(hashPath, postHash, 'utf-8');
+					console.log('Created hash of full postTxt:', postHash);
+				}
+			}
+		} else {
+			console.log('Image is in root directory. We will ignore post text and hash files.');
+		}
+		
+		// Load tags from image file if no tags were found yet
+		if (!tagsLoaded) {
+			const { tags, tagsHash } = getTags(imagePath, useTxt, txtPath, hashPath);
+			postTxt = tags;
+			postHash = tagsHash;
+		}
+		
+		console.log('Post text: ' + postTxt + '\nwith hash: ' + postHash);
 		
 		// Check for old tweets to quote
 		let quotedTweetId = null; // eg. '1675632144117379073';
@@ -147,7 +196,7 @@ const tweetRandomImage = async () => {
 		if (config.quote) {
 			try {
 				loadQuoteData();
-				const loadedTweetID = quoteData[tagsHash];
+				const loadedTweetID = quoteData[postHash];
 				if (loadedTweetID) {
 					quotedTweetId = loadedTweetID;
 					console.log('Found a previous tweet to quote with ID ', quotedTweetId);
@@ -159,7 +208,7 @@ const tweetRandomImage = async () => {
 		
 		try {
 			console.log('Uploading image', imagePath);
-			const tweetImage = await T.tweetMedia(tags, imagePath, quotedTweetId);
+			const tweetImage = await T.tweetMedia(postTxt, imagePath, quotedTweetId);
 			// console.log(typeof tweetImage === 'string', tweetImage instanceof String, typeof tweetImage);
 			if (tweetImage.error) {
 				console.log('Can not tweet: Received error', tweetImage.code, '-', tweetImage.data?.title, '\n');
@@ -169,7 +218,7 @@ const tweetRandomImage = async () => {
 			console.log('Tweeted with picture. Response:', tweetImage);
 			
 			// Store tweet ID to find it later for quoting
-			quoteData[tagsHash] = tweetImage.data.id;
+			quoteData[postHash] = tweetImage.data.id;
 			saveQuoteData();
 			
 			const imageName = path.basename(imagePath);

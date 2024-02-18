@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node image-tweeter.js"
+    "start": "node image-tweeter.js",
+    "hash": "node generate-hashes.js"
   },
   "repository": {
     "type": "git",
