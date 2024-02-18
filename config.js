@@ -14,7 +14,7 @@ const config = {
 	hashWithTags:     true,
 	hashWithModel:    false,
 	hashWithSampler:  false,
-	usePostHashFiles: false,
+	usePostHashFiles: false
 }
 
 module.exports = config;
