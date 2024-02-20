@@ -39,14 +39,26 @@ class TwitterV2BT {
   }
 
   // Make a media tweet using Twitter API v1 & v2
-  async tweetMedia(message, mediaPath, quotedTweetId = null){
+  async tweetMedia(message, mediaPath, quotedOrReplyTweetId = null, quoteOrReply = 'none'){
     if(!message) return 'Enter a message.';
     if(!mediaPath) return 'Enter image or video path.';
     return await this.client.v1.uploadMedia(mediaPath)
         .then(async (mediaId)=>{
-			if (quotedTweetId) {
-				console.log('Picture uploaded with mediaId: ' + mediaId + '. Trying to post it as a quote for ' + quotedTweetId);
-				return await this.client.v2.tweet({ text: message, media: { media_ids: [mediaId] }, quote_tweet_id: quotedTweetId })
+			if (quotedOrReplyTweetId && quoteOrReply != 'none') {
+				const postWith = (quoteOrReply == 'both') ? 'reply and quote' : quoteOrReply;
+				console.log('Picture uploaded with mediaId: ' + mediaId + '. Trying to post it as a '
+							+ postWith + ' for ' + quotedOrReplyTweetId);
+				let promise;
+				if (quoteOrReply == 'reply') {
+					promise = this.client.v2.reply(message, quotedOrReplyTweetId, { media: { media_ids: [mediaId] } });
+				} else if (quoteOrReply == 'both') {
+					promise = this.client.v2.reply(message, quotedOrReplyTweetId,
+												   { media: { media_ids: [mediaId] }, quote_tweet_id: quotedOrReplyTweetId });
+				} else /*if (quoteOrReply != 'quote')*/ {
+					// This will be the default for a unknown quoteOrReply string
+					promise = this.client.v2.tweet({ text: message, media: { media_ids: [mediaId] }, quote_tweet_id: quotedOrReplyTweetId });
+				}
+				return await promise
 					.then((response)=>{
 						return response;
 					})

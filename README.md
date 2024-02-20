@@ -20,15 +20,35 @@ Posted images will be moved to the foler __images-sent__ if exists (must be crea
 Set __repeat__ in the __config.js__ file to __false__ if you only want to do a single post.<br>
 Is __repeat__ set to __true__ it will post repeatedly every __repeatSeconds__ seconds with a variance of __repeatVariation__ seconds. All values can be changed in the __config.js__ file.
 
-## Quote previous tweets
+## Quote previous tweets or reply to previous tweets
 
-Set __quote__ in the __config.js__ file to __true__ to quote previous tweets in your new tweets.<br>
-You can use these three flags in the __config.js__ file to determine when it should quote or not (when comparing images):<br>
+Set __quoteOrReply__ in the __config.js__ file to __'quote'__ to quote previous tweets in your new tweets.<br>
+Set __quoteOrReply__ in the __config.js__ file to __'reply'__ to reply previous tweets in your new tweets.<br>
+Set __quoteOrReply__ in the __config.js__ file to __'both'__ to reply to and quote previous tweets in your new tweets.<br>
+Set __quoteOrReply__ in the __config.js__ file to __'none'__ to do neither in your new tweets.<br>
+You can use these three flags in the __config.js__ file to determine when it should quote/reply or not (when comparing images):<br>
 - __hashWithTags__ Uses the tags in the png meta data (not the __defaultTags__ from the __config.js__).
 - __hashWithModel__ Uses the model (checkpoint) used for the image generation, read from the png meta data.
 - __hashWithSampler__ Uses the sampler used for the image generation, read from the png meta data.
 
-That means if all three are set to __false__ it will always quote, no matter the used tags, model or sampler.
+That means if all three are set to __false__ it will always quote/reply (when set), no matter the used tags, model or sampler.
+Set __usePostHashFiles__ to __true__ if you want that the tags found in the image and the generated hash get saved in text files. These files will then be prefered and used while they exist and above flags will be ignored (because there is no new tag and hash generation).
+
+Set __updateRefId__ to __true__ if you want that a new tweet the bot posts will be the one that gets quoted or replied to next. (= Always the latest...)<br>
+Set it to __false__ if you want to keep a tweet id if it already exists. (= Always the first...)
+
+## Further settings
+
+__maxPostLength__: Allowed chars in post text. Current maximum allowed by the Twitter API is __280__. Texts that are too long get trimmed. 
+__maxFileSize__: Currently by the Twitter API allowed image file size is __5242880__ bytes. The program will just end when this is exceeded instead of wasting an API request that will fail.
+__quoteFileName__: Name of the file to save the tweet ids that should be quoted or replyed to. The hash that was generated from the tags (see above) will point to the tweet ids. Default file name: __'quoteData.json'__
+__inputDirName__: Store the images you wish to post in sub folders in this folder. Default: __'images'__
+__outputDirName__: Images that got sent will be moved to this folder. The sub folder hierarchy will be the same. Default: __'images-sent'__
+
+## Generate hashed from own texts
+
+If you want to generate hashed (references to existing posts with their tweet ids) from your own texts instead of the png meta data, you can run the __generate-hashes.bat__. It's a little helper tool for generating the post text hashes from a txt file for each subfolder in the images directory. For this to work you need to set __usePostHashFiles__ to __true__ (see above). But instead of generating the __post.txt__ files with the bot, you provide them yourself. It will then generate __hash.txt__ files in each subfolder that has a __post.txt__ file.<br>
+With this you could also generate the quote/reply database yourself. You can extend the __quoteData.json__ file with new lines with the hash (left) pointing to the tweet id (right): eg. __"5933375593691789": "1746116918585524312"__. Tweet ids can be found directly in the post urls in your browser.
 
 ## Examples
 
@@ -44,6 +64,11 @@ Result of an image that contains the following Meta data:
 Result of a tweet with quoting a previous tweet that used the same tags, model and sampler:
 
 ![Example Post with Quote](example-post-with-quote.png)
+
+## Troubleshooting
+
+- Image file size too large: If your images are too large I recommend using __ffmpeg__ eg. with following command:
+__for %%a in ("*.png") do ffmpeg -i "%%a" -preset ultrafast -qscale:v 2 "%%~na.jpg"__
 
 # Find me
 
