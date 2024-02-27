@@ -17,6 +17,9 @@ const postHashFileName = 'hash.txt';
 
 // A map that maps a hash generated from tags in a picture to the tweetID of the post of that picture
 let quoteData = {};
+// An object to save some statistics like the number of posts
+let statsData = {};
+let postsInThisSession = 0;
 
 const randomFromArray = (arr) => {
     /* Helper function for picking a random item from an array */
@@ -51,14 +54,43 @@ const cyrb53 = (str, seed = 0) => {
     return 4294967296 * (2097151 & h2) + (h1 >>> 0);
 };
 
+const saveJSON = (fileName, data) => {
+	try {
+		const jsonPath = path.join(__dirname, fileName);
+		fs.writeFileSync(jsonPath, JSON.stringify(data, null, 2) , 'utf-8');
+	} catch (error) {
+		console.log('Could not save', fileName, error);
+	}
+};
+
+const loadJSON = (fileName, defaultResult = null) => {
+	try {
+		const jsonPath = path.join(__dirname, fileName);
+		if (!fs.existsSync(jsonPath)) {
+			console.log('File doesn\'t exist:', fileName);
+			return defaultResult;
+		}
+		return JSON.parse(fs.readFileSync(jsonPath, { encoding: 'utf-8', flag: 'r' }));
+	} catch (error) {
+		console.log('Could not load', fileName, error);
+	}
+	return defaultResult;
+};
+
 const saveQuoteData = () => {
-	const jsonPath = path.join(__dirname, config.quoteFileName);
-    fs.writeFileSync(jsonPath, JSON.stringify(quoteData, null, 2) , 'utf-8');
+	saveJSON(config.quoteFileName, quoteData);
 };
 
 const loadQuoteData = () => {
-	const jsonPath = path.join(__dirname, config.quoteFileName);
-    quoteData = JSON.parse(fs.readFileSync(jsonPath, { encoding: 'utf-8', flag: 'r' }));
+    quoteData = loadJSON(config.quoteFileName, quoteData);
+};
+
+const saveStatistics = () => {
+	saveJSON(config.statsFileName, statsData);
+};
+
+const loadStatistics = () => {
+    statsData = loadJSON(config.statsFileName, statsData);
 };
 
 // Get all images recursively
@@ -79,6 +111,17 @@ const getImagesRecursive = (dir = path.join(__dirname, config.inputDirName), fil
 
 const getFileSize = (filePath) => {
     return fs.statSync(filePath).size;
+};
+
+const onStop = (error) => {
+	const currentDateTime = (new Date()).toLocaleString();
+    statsData.lastStop = currentDateTime;
+	if (error) {
+		statsData.lastError = error;
+	}
+	saveStatistics();
+	const posts = statsData.posts ? statsData.posts : 0;
+	console.log('\nStopping program at', currentDateTime, 'after', postsInThisSession, 'posts ( total', posts, ')');
 };
 
 // If the image is a png generated with auto111 it should have some usefull info in the png meta data
@@ -146,8 +189,9 @@ const tweetRandomImage = async () => {
 		let imagePath;
 		let errorOccured = false;
 		try {
-			imagePath = randomFromArray(getImagesRecursive());
-			console.log('Chosen image:', imagePath);
+			const imgList = getImagesRecursive();
+			imagePath = randomFromArray(imgList);
+			console.log('Chosen', imagePath, 'of', imgList.length, 'images.');
 		
 			// Check file size
 			const fileSize = getFileSize(imagePath);
@@ -193,7 +237,8 @@ const tweetRandomImage = async () => {
 					}
 				}
 			} else {
-				console.log('Image is in root directory. We will ignore post text and hash files.');
+				const reason = config.usePostHashFiles ? 'Image is in root directory.' : 'Config set to generate from new -';
+				console.log(reason, ' We will ignore post text and hash files.');
 			}
 			
 			// Load tags from image file if no tags were found yet
@@ -241,6 +286,11 @@ const tweetRandomImage = async () => {
 					console.log('Uploading image', imagePath);
 					const tweetImage = await T.tweetMedia(postTxt, imagePath, quotedTweetId, config.quoteOrReply);
 					// console.log(typeof tweetImage === 'string', tweetImage instanceof String, typeof tweetImage);
+					if (tweetImage == undefined) {
+						const errorStr = 'Can not tweet: Unknown error\n';
+						console.log(errorStr);
+						throw new Error(errorStr);
+					}
 					if (tweetImage.error) {
 						console.log('Can not tweet: Received error', tweetImage.code, '-', tweetImage.data?.title, '\n');
 						// reject(tweetImage);
@@ -248,6 +298,16 @@ const tweetRandomImage = async () => {
 					}
 					console.log('Tweeted with picture. Response:', tweetImage);
 					
+					// Save how many posts we already did
+					postsInThisSession++;
+					if (!statsData.posts) {
+						statsData.posts = 1;
+					} else {
+						statsData.posts++;
+					}
+					statsData.lastPost = (new Date()).toLocaleString();
+					saveStatistics();
+
 					// Store tweet ID to find it later for quoting or replying.
 					// Overwrites the previews id to reference to the latest post / reply instead of the first post.
 					if (!quoteData[postHash] || config.updateRefId) {
@@ -264,7 +324,8 @@ const tweetRandomImage = async () => {
 					}
 					fs.rename(imagePath, newImagePath, () => {
 						console.log('Moved ' + imageName + ' to ' + newImagePath);
-						console.log(new Date().toLocaleString());
+						console.log('Total posts:', statsData.posts,', in this session:', postsInThisSession);
+						console.log(statsData.lastPost);
 						resolve();
 					});
 					
@@ -282,6 +343,17 @@ const tweetRandomImage = async () => {
 // Direct calls
 // whoami();
 // tweetText('Test Tweet');
+
+loadStatistics();
+// Save how often the program was started
+if (!statsData.starts) {
+	statsData.starts = 1;
+} else {
+	statsData.starts++;
+}
+// and when we started it
+statsData.lastStart = (new Date()).toLocaleString();
+saveStatistics();
 
 if (config.repeat) {
 	const waitBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
@@ -309,7 +381,7 @@ if (config.repeat) {
 			try {
 				await tweetRandomImage();
 			} catch (error) {
-				console.log('\nStopping program at', new Date().toLocaleString());
+				onStop(error);
 				return;
 			}
 			
@@ -328,8 +400,8 @@ if (config.repeat) {
 		// And after that start the counter progress bar and loop
 		startCounter();
 		repeater();
-	}, () => {
-		console.log('\nStopping program at', new Date().toLocaleString());
+	}, (error) => {
+		onStop(error);
 	});
 
 } else {

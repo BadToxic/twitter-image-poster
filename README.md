@@ -22,14 +22,15 @@ Is __repeat__ set to __true__ it will post repeatedly every __repeatSeconds__ se
 
 ## Quote previous tweets or reply to previous tweets
 
-Set __quoteOrReply__ in the __config.js__ file to __'quote'__ to quote previous tweets in your new tweets.<br>
-Set __quoteOrReply__ in the __config.js__ file to __'reply'__ to reply previous tweets in your new tweets.<br>
-Set __quoteOrReply__ in the __config.js__ file to __'both'__ to reply to and quote previous tweets in your new tweets.<br>
-Set __quoteOrReply__ in the __config.js__ file to __'none'__ to do neither in your new tweets.<br>
-You can use these three flags in the __config.js__ file to determine when it should quote/reply or not (when comparing images):<br>
-- __hashWithTags__ Uses the tags in the png meta data (not the __defaultTags__ from the __config.js__).
-- __hashWithModel__ Uses the model (checkpoint) used for the image generation, read from the png meta data.
-- __hashWithSampler__ Uses the sampler used for the image generation, read from the png meta data.
+Set __quoteOrReply__ in the __config.js__ file to:
+- __'quote'__: quote previous tweets in your new tweets.
+- __'reply'__: reply previous tweets in your new tweets.
+- __'both'__: reply to and quote previous tweets in your new tweets.
+- __'none'__: do neither in your new tweets.
+You can use these three flags in the __config.js__ file to determine when it should quote/reply or not (when comparing images):
+- __hashWithTags__: Uses the tags in the png meta data (not the __defaultTags__ from the __config.js__).
+- __hashWithModel__: Uses the model (checkpoint) used for the image generation, read from the png meta data.
+- __hashWithSampler__: Uses the sampler used for the image generation, read from the png meta data.
 
 That means if all three are set to __false__ it will always quote/reply (when set), no matter the used tags, model or sampler.
 Set __usePostHashFiles__ to __true__ if you want that the tags found in the image and the generated hash get saved in text files. These files will then be prefered and used while they exist and above flags will be ignored (because there is no new tag and hash generation).
@@ -37,13 +38,24 @@ Set __usePostHashFiles__ to __true__ if you want that the tags found in the imag
 Set __updateRefId__ to __true__ if you want that a new tweet the bot posts will be the one that gets quoted or replied to next. (= Always the latest...)<br>
 Set it to __false__ if you want to keep a tweet id if it already exists. (= Always the first...)
 
+## Statistics
+
+The following statistics, infos & logs are saved in __'stats.json'__ (filename can be changed, see below):
+- __starts__: How often this program was started.
+- __lastStart__: What date & time this program was started last.
+- __posts__: Number of total posts.
+- __lastPost__: Date & time of the last post.
+- __lastStop__: Date & time of the last program stop.
+- __lastError__: Last error that caused the program to stop.
+
 ## Further settings
 
-__maxPostLength__: Allowed chars in post text. Current maximum allowed by the Twitter API is __280__. Texts that are too long get trimmed. 
-__maxFileSize__: Currently by the Twitter API allowed image file size is __5242880__ bytes. The program will just end when this is exceeded instead of wasting an API request that will fail.
-__quoteFileName__: Name of the file to save the tweet ids that should be quoted or replyed to. The hash that was generated from the tags (see above) will point to the tweet ids. Default file name: __'quoteData.json'__
-__inputDirName__: Store the images you wish to post in sub folders in this folder. Default: __'images'__
-__outputDirName__: Images that got sent will be moved to this folder. The sub folder hierarchy will be the same. Default: __'images-sent'__
+- __maxPostLength__: Allowed chars in post text. Current maximum allowed by the Twitter API is __280__. Texts that are too long get trimmed. 
+- __maxFileSize__: Currently by the Twitter API allowed image file size is __5242880__ bytes. The program will just end when this is exceeded instead of wasting an API request that will fail.
+- __quoteFileName__: Name of the file to save the tweet ids that should be quoted or replyed to. The hash that was generated from the tags (see above) will point to the tweet ids. Default file name: __'quoteData.json'__
+- __statsFileName__: Name of the file to save the statistics. Default file name: __'stats.json'__
+- __inputDirName__: Store the images you wish to post in sub folders in this folder. Default: __'images'__
+- __outputDirName__: Images that got sent will be moved to this folder. The sub folder hierarchy will be the same. Default: __'images-sent'__
 
 ## Generate hashed from own texts
 

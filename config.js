@@ -7,6 +7,7 @@ const config = {
 	clientID:         'XXXX',
 	clientSecret:     'XXXX',
 	quoteFileName:    'quoteData.json',
+	statsFileName:    'stats.json',
 	inputDirName:     'images',
 	outputDirName:    'images-sent',
 	repeat:           true,
